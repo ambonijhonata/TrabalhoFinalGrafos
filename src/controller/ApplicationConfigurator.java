@@ -8,12 +8,13 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-public class FileMananger {
+import validators.ConfigsValidator;
+
+public class ApplicationConfigurator {
 
 	public void criarDiretorio(String path) {
 
@@ -71,7 +72,7 @@ public class FileMananger {
 	}
 
 	private void createConfigs() {
-		String configs = "Processado=C:\\Teste\\Processado\nNão Processado=C:\\Teste\\NaoProcessado\\";
+		String configs = "Processado=C:\\Teste\\Processado\nNão Processado=C:\\Teste\\NaoProcessado";
 		criarDiretorio(("C:\\Teste"));
 		criarDiretorio(("C:\\Teste\\Configuracao"));
 		criarArquivo(("C:\\Teste\\Configuracao\\configs.txt"));
@@ -81,33 +82,42 @@ public class FileMananger {
 	private void readConfigs() throws Exception {
 		FileReader fileReader = new FileReader("C:\\Teste\\Configuracao\\configs.txt");
 		BufferedReader bufferedReader = new BufferedReader(fileReader);
-				
+
 		boolean containsNaoProcessado = false;
-		
-		if (fileReader.ready()) {
-			String linha;
-			while ((linha = bufferedReader.readLine()) != null) {
-				if(linha.contains("Não Processado=")) {
-					containsNaoProcessado = true;
-				}
-				criarDiretorio(linha.substring(linha.indexOf("=") + 1));
+		boolean containsProcessado = false;
+
+		ConfigsValidator.validateConfigs(fileReader);
+
+		String linha;
+		while ((linha = bufferedReader.readLine()) != null) {
+			if (linha.contains("Não Processado=")) {
+				containsNaoProcessado = true;
+			} else if (linha.contains("Processado=")) {
+				containsProcessado = true;
 			}
-		} else {
-			// O arquivo está em branco
-			bufferedReader.close();
-			fileReader.close();
-			throw new IOException("O arquivo está vazio.");
+
+			if (linha.startsWith("00")) {
+				System.out.println("here");
+			} else if (linha.startsWith("01")) {
+				System.out.println("here 2");
+			}
+
+			criarDiretorio(linha.substring(linha.indexOf("=") + 1));
 		}
-		
-		if(!containsNaoProcessado) {
+
+		bufferedReader.close();
+		fileReader.close();
+
+		if (!containsNaoProcessado || !containsProcessado) {
 			throw new Exception("Arquivo de configuração inválido");
 		}
 	}
 
-	public void configProgram() {
-		createConfigs();
+	public void configProgram(String pathRotas) {
 		try {
+			createConfigs();
 			readConfigs();
+			copyFileToTestDirectory(pathRotas);
 		} catch (Exception e) {
 			System.out.println("Erro ao configurar o programa");
 			e.printStackTrace();
@@ -116,27 +126,22 @@ public class FileMananger {
 	}
 
 	public void copyFileToTestDirectory(String path) {
-		String diretorioDestino = "C:\\Teste\\";
-
 		try {
-			Path caminhoOrigem = Paths.get("C:\\" + path);
-			File arquivoOrigem = new File(path);
-			File diretorioTeste = new File(diretorioDestino);
+			File diretorioOrigem = new File(path);
+			File[] arquivos = diretorioOrigem.listFiles();
 
-			if (!diretorioTeste.exists()) {
-				diretorioTeste.mkdirs(); // Cria o diretório de teste, se ainda não existir
+			if (arquivos != null) {
+				for (File arquivo : arquivos) {
+					if (arquivo.isFile() && arquivo.getName().matches("rota\\d{2}\\.txt")) {
+						Path origem = arquivo.toPath();
+						Path destino = Path.of("C:\\Teste", arquivo.getName());
+
+						Files.copy(origem, destino, StandardCopyOption.REPLACE_EXISTING);
+					}
+				}
 			}
-
-			Path destino = diretorioTeste.toPath().resolve(arquivoOrigem.getName());
-
-			Files.copy(caminhoOrigem, destino, StandardCopyOption.REPLACE_EXISTING);
-
-			System.out.println("Arquivo copiado para o diretório de teste: " + diretorioTeste);
-		} catch (InvalidPathException e) {
-			System.err.println("Caminho inválido: " + e.getMessage());
 		} catch (IOException e) {
 			System.err.println("Ocorreu um erro ao copiar o arquivo: " + e.getMessage());
 		}
-	}
-
+	}	
 }

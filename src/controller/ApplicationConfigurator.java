@@ -8,11 +8,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-
-import validators.ConfigsValidator;
 
 public class ApplicationConfigurator {
 
@@ -85,9 +84,11 @@ public class ApplicationConfigurator {
 
 		boolean containsNaoProcessado = false;
 		boolean containsProcessado = false;
-
-		ConfigsValidator.validateConfigs(fileReader);
-
+		
+		if(!fileReader.ready()) {
+			throw new IOException("O arquivo está vazio.");
+		}
+		
 		String linha;
 		while ((linha = bufferedReader.readLine()) != null) {
 			if (linha.contains("Não Processado=")) {
@@ -95,13 +96,10 @@ public class ApplicationConfigurator {
 			} else if (linha.contains("Processado=")) {
 				containsProcessado = true;
 			}
-
-			if (linha.startsWith("00")) {
-				System.out.println("here");
-			} else if (linha.startsWith("01")) {
-				System.out.println("here 2");
+			
+			if(!linha.contains("=")) {
+				throw new InvalidPathException(linha, "Caminho de arquivo inválido");
 			}
-
 			criarDiretorio(linha.substring(linha.indexOf("=") + 1));
 		}
 
@@ -117,7 +115,7 @@ public class ApplicationConfigurator {
 		try {
 			createConfigs();
 			readConfigs();
-			copyFileToTestDirectory(pathRotas);
+			copyRoutesToTestDirectory(pathRotas);
 		} catch (Exception e) {
 			System.out.println("Erro ao configurar o programa");
 			e.printStackTrace();
@@ -125,7 +123,7 @@ public class ApplicationConfigurator {
 		}
 	}
 
-	public void copyFileToTestDirectory(String path) {
+	public void copyRoutesToTestDirectory(String path) {
 		try {
 			File diretorioOrigem = new File(path);
 			File[] arquivos = diretorioOrigem.listFiles();

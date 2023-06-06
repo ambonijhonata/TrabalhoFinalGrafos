@@ -116,6 +116,7 @@ public class ApplicationConfigurator {
 			createConfigs();
 			readConfigs();
 			copyRoutesToTestDirectory(pathRotas);
+			//copyFile("C:\\Teste\\rota01.txt", "C:\\Teste\\NaoProcessado");
 		} catch (Exception e) {
 			System.out.println("Erro ao configurar o programa");
 			e.printStackTrace();
@@ -141,5 +142,18 @@ public class ApplicationConfigurator {
 		} catch (IOException e) {
 			System.err.println("Ocorreu um erro ao copiar o arquivo: " + e.getMessage());
 		}
-	}	
+	}
+	
+	public static void copyFile(String filePath, String destinationDirectory) throws IOException {
+        File file = new File(filePath);
+
+        if (file.exists()) {
+            Path sourcePath = file.toPath();
+            Path destinationPath = Path.of(destinationDirectory, file.getName());
+
+            Files.move(sourcePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+        } else {
+            throw new IOException("O arquivo não existe no caminho especificado.");
+        }
+    }
 }
